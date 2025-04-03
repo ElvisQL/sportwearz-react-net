@@ -49,7 +49,6 @@ namespace WebApplication1
 
 
             builder.Services.AddControllers();
-            // Add services to the container.
             builder.Services.AddRazorPages();
             
 
@@ -59,7 +58,6 @@ namespace WebApplication1
             });
 
 
-            // En Program.cs o Startup.cs
             builder.Services.AddAutoMapper(config =>
             {
                 config.AddProfile<AutoMapperProfile>();
@@ -71,7 +69,6 @@ namespace WebApplication1
             builder.Services.AddTransient(typeof(IGenericRepository<>), typeof(GenericoRepository<>));
             builder.Services.AddScoped<IVentaRepository, VentaRepository>();
             builder.Services.AddScoped<IPasswordHasher,BcryptPasswordHasher>();
-
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IProductService,ProductService>();
             builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -80,12 +77,8 @@ namespace WebApplication1
             builder.Services.AddScoped<IBrandService, BrandService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<ICartService, CartService>();
-
-
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
-
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("nuevaPolitica", app =>
@@ -100,14 +93,13 @@ namespace WebApplication1
             var app = builder.Build();
 
         
-            // Orden CORRECTO de middlewares
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
 
             app.UseCors("nuevaPolitica");
 
-            app.UseAuthentication(); // ¡Este debe ir antes de Authorization!
+            app.UseAuthentication(); 
             app.UseAuthorization();
 
             // Configuración Swagger
