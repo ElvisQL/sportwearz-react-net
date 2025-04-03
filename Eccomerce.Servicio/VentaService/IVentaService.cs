@@ -10,6 +10,7 @@ namespace Eccomerce.Servicio.VentaService
     public interface IVentaService
     {
         Task<VentaDTO> Registrar(VentaDTO venta);
-        Task<List<VentaDTO>> ListarVentas(string busqueda);
+        Task<List<VentaDTO>> ListarVentas();
+        Task<bool> CambiarEstadoVenta(int idVenta, string nuevoEstado);
     }
 }

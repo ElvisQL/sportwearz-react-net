@@ -81,21 +81,31 @@ namespace WebApplication1.Controllers
 
 
 
-        [HttpPut("Edit")]
-        public async Task<IActionResult> Edit([FromBody] CategoryDTO modelo)
+        [HttpPut("Edit/{categoryId:int}")]
+        public async Task<IActionResult> Edit(
+            [FromRoute] int categoryId,
+            [FromBody] CategoryDTO modelo
+)
         {
             var response = new ResponseDTO<bool>();
             try
             {
+                response.Response = await _categoryService.Update(categoryId, modelo);
                 response.Success = true;
-                response.Response = await _categoryService.Update(modelo);
+                return Ok(response);
             }
-            catch (Exception e)
+            catch (KeyNotFoundException ex)
             {
                 response.Success = false;
-                response.Message = e.Message;
+                response.Message = ex.Message;
+                return NotFound(response);
             }
-            return Ok(response);
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+                return StatusCode(500, response);
+            }
         }
 
 

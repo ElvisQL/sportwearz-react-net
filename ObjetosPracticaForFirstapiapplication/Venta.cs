@@ -10,6 +10,7 @@ public partial class Venta
     public int? IdUsuario { get; set; }
 
     public decimal? Total { get; set; }
+    public string Estado { get; set; } // <-- Campo agregado manualmente
 
     public DateTime? FechaCreacion { get; set; }
 

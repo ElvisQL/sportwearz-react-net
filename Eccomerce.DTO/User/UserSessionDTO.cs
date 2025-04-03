@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Eccomerce.DTO.Cart;
 using Eccomerce.DTO.Role;
 namespace Eccomerce.DTO.User
 {
@@ -17,6 +18,7 @@ namespace Eccomerce.DTO.User
         public RoleDTO? Role { get; set; }
 
         public string? Token { get; set; }
+        public CartDTO? Cart { get; set; }
 
     }
 }

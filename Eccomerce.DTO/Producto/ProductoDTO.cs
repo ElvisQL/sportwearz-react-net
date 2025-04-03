@@ -11,8 +11,8 @@ namespace Eccomerce.DTO.Producto
 {
     public class ProductoDTO
     {
-        
         public int ProductId { get; set; }
+
         [Required(ErrorMessage = "Ingrese nombre")]
         public string ProductName { get; set; }
         [Required(ErrorMessage = "Ingrese descripcion")]

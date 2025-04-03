@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Eccomerce.Utilidades;
 using Microsoft.AspNetCore.Authorization;
+using Eccomerce.DTO.Cart;
+using Eccomerce.MODELO;
 
 
 
@@ -16,32 +18,31 @@ namespace WebApplication1.Controllers
     {
         private readonly IUserService _userService;
         private IConfiguration _config;
-        
-        public UsuarioController(IUserService userService, IConfiguration config) { 
+
+        public UsuarioController(IUserService userService, IConfiguration config) {
             _userService = userService;
             _config = config;
         }
 
         [HttpGet("lista")]
-        public async Task<IActionResult> Lista(string rol ="NA", string busqueda ="NA")
+        public async Task<IActionResult> Lista()
         {
             var response = new ResponseDTO<List<UserSessionDTO>>();
 
             try
             {
-                if (busqueda == "NA") busqueda = "";
-                if (rol == "NA") rol = "";
+
                 response.Success = true;
-                response.Response = await _userService.ListarUsuarios(rol, busqueda);   
+                response.Response = await _userService.ListarUsuarios();
             }
             catch (Exception e)
             {
                 response.Success = false;
                 response.Message = e.Message;
             }
-            
+
             return Ok(response);
-            
+
         }
         [HttpGet("Get/{id:int}")]
         public async Task<IActionResult> GetUser(int id)
@@ -58,6 +59,7 @@ namespace WebApplication1.Controllers
                 response.Message = e.Message;
             }
             return Ok(response);
+
         }
 
 
@@ -65,7 +67,7 @@ namespace WebApplication1.Controllers
 
 
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateUser([FromBody]UserCreateDTO modelo)
+        public async Task<IActionResult> CreateUser([FromBody] UserCreateDTO modelo)
         {
             var response = new ResponseDTO<UserCreateDTO>();
             try
@@ -84,13 +86,14 @@ namespace WebApplication1.Controllers
 
 
         [HttpPost("Auth")]
-        public async Task<IActionResult> AuthUser([FromBody]UserLoginDTO modelo)
+        public async Task<IActionResult> AuthUser([FromBody] UserLoginDTO modelo)
         {
             var response = new ResponseDTO<UserSessionDTO>();
             try
             {
                 response.Success = true;
                 response.Response = await _userService.Logear(modelo);
+
 
                 JwtHelper jwtHelper = new JwtHelper(_config);
                 string token = jwtHelper.GenerateToken(response.Response.UserId.ToString(), response.Response.Role.RoleName, response.Response.Email);
@@ -110,14 +113,14 @@ namespace WebApplication1.Controllers
 
 
         [Authorize(Roles = "admin")]
-        [HttpPut("Edit")]
-        public async Task<IActionResult> Edit([FromBody] UserUpdateDTO modelo)
+        [HttpPut("Edit/{userId:int}")]
+        public async Task<IActionResult> Edit([FromRoute] int userId,[FromBody] UserUpdateDTO modelo)
         {
             var response = new ResponseDTO<bool>();
             try
             {
                 response.Success = true;
-                response.Response = await _userService.UpdateUserByAdmin(modelo);
+                response.Response = await _userService.UpdateUserByAdmin(userId,modelo);
             }
             catch (Exception e)
             {
@@ -144,10 +147,42 @@ namespace WebApplication1.Controllers
             }
             return Ok(response);
         }
+        //[HttpPost("{userId}/cart")]
+        //public async Task<IActionResult> SaveCart(int userId, [FromBody] CartDTO cartItems)
+        //{
+        //    var response = new ResponseDTO<bool>();
+        //    try
+        //    {
+        //        response.Success = true;
+        //        response.Response = await _userService.SaveCart(userId, cartItems);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        response.Success = false;
+        //        response.Message = e.Message;
+        //    }
+        //    return Ok(response);
+        //}
 
 
-
+        //[HttpGet("{userId}/cart")]
+        //public async Task<IActionResult> GetCart(int userId)
+        //{
+        //    var response = new ResponseDTO<CartDTO>();
+        //    try
+        //    {
+        //        response.Success = true;
+        //        response.Response = await _userService.GetCart(userId);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        response.Success = false;
+        //        response.Message = e.Message;
+        //    }
+        //    return Ok(response);
+        //}
 
     }
+   
 
 }

@@ -10,7 +10,6 @@ namespace Eccomerce.DTO.Category
     public class CategoryDTO
     {
         public int CategoryId { get; set; }
-
         [Required(ErrorMessage ="ingrese nombre de categoria")]
         public string? Nombre { get; set; } 
 

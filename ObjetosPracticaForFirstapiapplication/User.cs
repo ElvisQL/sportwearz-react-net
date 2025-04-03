@@ -25,7 +25,7 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual Cart? Cart { get; set; }
+    public virtual Cart Cart { get; set; } = new Cart();
 
     public virtual Role Role { get; set; } = null!;
 

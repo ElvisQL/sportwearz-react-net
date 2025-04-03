@@ -111,34 +111,41 @@ namespace Eccomerce.Servicio.BrandService
             }
         }
 
-        public async Task<bool> Update(BrandDTO modelo)
+        public async Task<bool> Update(int brandId,BrandDTO modelo)
         {
             try
             {
 
-                var consultaLINQ = _brandRepository.Consultar(p => p.BrandId == modelo.BrandId);
-                var response = await consultaLINQ.FirstOrDefaultAsync();
-                if (response != null)
+                var brand = await _brandRepository.Consultar(c => c.BrandId == brandId)
+                    .FirstOrDefaultAsync();
+                if (brand == null)
                 {
-                    response.BrandName = modelo.BrandName;
-                    response.Description = modelo.Description;
+                    throw new KeyNotFoundException($"Categoría con ID {brandId} no encontrada");
+                }
+                brand.BrandName = modelo.BrandName;
+                brand.Description = modelo.Description;
+                var resultado = await _brandRepository.Editar(brand);
+                if (!resultado)
+                {
+                    throw new InvalidOperationException("Error al guardar cambios");
+                }
 
-                    var responseCategory = await _brandRepository.Editar(response);
-                    if (!responseCategory)
-                    {
-                        throw new TaskCanceledException("No se pudo editar la marca");
-                    }
-                    return responseCategory;
-                }
-                else
-                {
-                    throw new TaskCanceledException("No se encontro la marca a editar");
-                }
+                return resultado;
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
+
+
+
+
+            
+
+
+
+
+
         }
     }
 }

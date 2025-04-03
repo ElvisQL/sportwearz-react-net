@@ -9,6 +9,9 @@ using Eccomerce.Repositorio.Contratos;
 using Eccomerce.MODELO;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Eccomerce.DTO.Cart;
+using Azure;
+using Eccomerce.Utilidades;
 
 
 namespace Eccomerce.Servicio.UserService
@@ -16,13 +19,20 @@ namespace Eccomerce.Servicio.UserService
     public class UserService : IUserService
     {
         private readonly IGenericRepository<User> _userRepository;
+        private readonly IGenericRepository<Cart> _cartRepository;
+        private readonly EccomerceDbContext _dbContext;
+
         private readonly IMapper _mapper;
+        private readonly IPasswordHasher _passwordHasher;
 
-        
 
-        public UserService(IGenericRepository<User> userrepository, IMapper mapper) { 
+
+        public UserService(IGenericRepository<User> userrepository, IMapper mapper,IPasswordHasher passwordHasher,EccomerceDbContext dbContext,IGenericRepository<Cart> cartRepository) { 
             _mapper = mapper;
             _userRepository = userrepository;
+            _cartRepository = cartRepository;
+            _passwordHasher = passwordHasher;
+            _dbContext = dbContext;
         }
 
        
@@ -34,11 +44,19 @@ namespace Eccomerce.Servicio.UserService
                 {
                     throw new Exception("Las contraseñas no coinciden");
                 }
-                var userDB = _mapper.Map<User>(modelo);
-                var response = await _userRepository.Crear(userDB);
+                var user = _mapper.Map<User>(modelo);
+                user.PasswordHash = _passwordHasher.Hash(modelo.PasswordHash);
+                // El carrito se crea automáticamente por la inicialización en el modelo
+                user.Cart.CreatedAt = DateTime.UtcNow;
+                user.Cart.UpdatedAt = DateTime.UtcNow;
+
+                var response = await _userRepository.Crear(user);
                 if (response.UserId != 0)
                 {
-                    return _mapper.Map<UserCreateDTO>(response);
+
+                    
+                    var userDto = _mapper.Map<UserCreateDTO>(response);
+                    return userDto;
                 }
                 else
                 {
@@ -54,41 +72,58 @@ namespace Eccomerce.Servicio.UserService
 
         public async Task<bool> Delete(int id)
         {
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                var consultaLINQ = _userRepository.Consultar(u => u.UserId == id);
-                var response = await consultaLINQ.FirstOrDefaultAsync();
-                if (response != null)
-                {
-                    var responseDelete = await _userRepository.Eliminar(response);
-                    if (!responseDelete)
-                    {
-                        throw new TaskCanceledException("No se pudo eliminar el usuario");
-                    }
-                    return responseDelete;
-                }
-                else
-                {
-                    throw new TaskCanceledException("No se encontro el usuario a eliminar");
-                }
-                return false;
+                // Cargar usuario con todas sus dependencias
+                var user = await _dbContext.Users
+                    .Include(u => u.Cart)
+                        .ThenInclude(c => c.CartItems)
+                    .Include(u => u.Venta)
+                        .ThenInclude(v => v.DetalleVenta)
+                    .FirstOrDefaultAsync(u => u.UserId == id);
 
+                if (user == null)
+                {
+                    throw new KeyNotFoundException("Usuario no encontrado");
+                }
+
+                // Eliminar en orden correcto
+                if (user.Cart != null)
+                {
+                    _dbContext.CartItems.RemoveRange(user.Cart.CartItems);
+                    _dbContext.Carts.Remove(user.Cart);
+                }
+
+                if (user.Venta != null)
+                {
+                    foreach (var venta in user.Venta)
+                    {
+                        _dbContext.DetalleVenta.RemoveRange(venta.DetalleVenta);
+                    }
+                    _dbContext.Venta.RemoveRange(user.Venta);
+                }
+
+                _dbContext.Users.Remove(user);
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
             }
             catch (Exception ex)
             {
-
-                throw ex;
+                await transaction.RollbackAsync();
+                throw new Exception("Error eliminando usuario", ex);
             }
         }
 
-        
 
-        public async Task<List<UserSessionDTO>> ListarUsuarios(string rol, string busqueda)
+        public async Task<List<UserSessionDTO>> ListarUsuarios()
         {
             try
             {
                 var consultaLINQ = _userRepository
-                    .Consultar(u => u.Role.RoleName == rol && (string.Concat(u.Email, u.Username, u.FirstName, u.LastName)).Contains(busqueda))
+                    .Consultar()
                     .Include(u => u.Role); //TODO NO MUESTRA EL ROLE PUES USERCREATE NO TIENE, HACER OTRO DTO PARA MUESTRA(?
                 
                 List<UserSessionDTO> lista = _mapper.Map<List<UserSessionDTO>>(await consultaLINQ.ToListAsync());
@@ -107,10 +142,14 @@ namespace Eccomerce.Servicio.UserService
         {
             try
             {
-                var consultaLINQ = _userRepository.Consultar(u => u.Email == modelo.Email && u.PasswordHash == modelo.PasswordHash).Include(u => u.Role);
+                var consultaLINQ = _userRepository.Consultar(u => u.Email == modelo.Email).Include(u => u.Role).Include(u=> u.Cart).ThenInclude(ci => ci.CartItems).ThenInclude(cii => cii.Product);
                 var response = await consultaLINQ.FirstOrDefaultAsync();
                 if (response != null)
                 {
+                    if (!_passwordHasher.Check(response.PasswordHash, modelo.PasswordHash))
+                    {
+                        throw new UnauthorizedAccessException("Credenciales inválidas");
+                    }
                     return _mapper.Map<UserSessionDTO>(response);
                 }
                 else
@@ -146,13 +185,14 @@ namespace Eccomerce.Servicio.UserService
             }
         }
 
-        public async Task<bool> Update(UserCreateDTO modelo)
+       
+
+        public async Task<bool> Update(int userId,UserCreateDTO modelo)
         {
             try
             {
 
-                var consultaLINQ = _userRepository.Consultar(p => p.UserId == modelo.UserId);
-                var response = await consultaLINQ.FirstOrDefaultAsync();
+                var response = await _userRepository.Consultar(p => p.UserId == userId).FirstOrDefaultAsync();
                 if (response != null)
                 {
                     response.FirstName = modelo.FirstName;
@@ -174,18 +214,17 @@ namespace Eccomerce.Servicio.UserService
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw ;
             }
         }
 
-        public async Task<bool> UpdateUserByAdmin(UserUpdateDTO modelo)
+        public async Task<bool> UpdateUserByAdmin(int userId,UserUpdateDTO modelo)
         {
 
             try
             {
 
-                var consultaLINQ = _userRepository.Consultar(p => p.UserId == modelo.UserId);
-                var response = await consultaLINQ.FirstOrDefaultAsync();
+                var response = await _userRepository.Consultar(p => p.UserId == userId).FirstOrDefaultAsync();
                 if (response != null)
                 {
                     response.FirstName = modelo.FirstName;
@@ -208,9 +247,10 @@ namespace Eccomerce.Servicio.UserService
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw ;
             }
         }
+
 
         
     }

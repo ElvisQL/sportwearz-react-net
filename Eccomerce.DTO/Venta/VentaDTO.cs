@@ -14,10 +14,13 @@ namespace Eccomerce.DTO.Venta
         public int? IdUsuario { get; set; }
 
         public decimal? Total { get; set; }
+        public string Estado { get; set; }
 
 
         public virtual ICollection<DetalleVentaDTO> DetalleVenta { get; set; } = new List<DetalleVentaDTO>();
 
         
+        
+        public DateTime? FechaCreacion { get; set; }
     }
 }

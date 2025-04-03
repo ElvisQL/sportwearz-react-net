@@ -12,6 +12,11 @@ using Eccomerce.Servicio.ProductService;
 using Eccomerce.Servicio.UserService;
 using Eccomerce.Servicio.VentaService;
 using Eccomerce.Servicio.RolesService;
+using Eccomerce.Servicio.CartService;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using AutoMapper;
 
 namespace WebApplication1
 {
@@ -19,7 +24,30 @@ namespace WebApplication1
     {
         public static void Main(string[] args)
         {
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
             var builder = WebApplication.CreateBuilder(args);
+
+            // Configuración JWT
+            var jwtSettings = builder.Configuration.GetSection("JWT");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+            builder.Services.AddAuthentication(options => {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options => {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true
+                };
+            });
+
+
+
             builder.Services.AddControllers();
             // Add services to the container.
             builder.Services.AddRazorPages();
@@ -31,12 +59,18 @@ namespace WebApplication1
             });
 
 
-            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+            // En Program.cs o Startup.cs
+            builder.Services.AddAutoMapper(config =>
+            {
+                config.AddProfile<AutoMapperProfile>();
+                config.SourceMemberNamingConvention = new LowerUnderscoreNamingConvention();
+                config.DestinationMemberNamingConvention = new PascalCaseNamingConvention();
+            });
 
 
             builder.Services.AddTransient(typeof(IGenericRepository<>), typeof(GenericoRepository<>));
             builder.Services.AddScoped<IVentaRepository, VentaRepository>();
-
+            builder.Services.AddScoped<IPasswordHasher,BcryptPasswordHasher>();
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IProductService,ProductService>();
@@ -45,6 +79,7 @@ namespace WebApplication1
             builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IBrandService, BrandService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
+            builder.Services.AddScoped<ICartService, CartService>();
 
 
             builder.Services.AddEndpointsApiExplorer();
@@ -55,41 +90,37 @@ namespace WebApplication1
             {
                 options.AddPolicy("nuevaPolitica", app =>
                 {
-                    app.AllowAnyOrigin()
+                    app.WithOrigins("http://localhost:5173")
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Error");
-                app.UseHsts(); 
-            }
-
-            app.MapControllers();
+        
+            // Orden CORRECTO de middlewares
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
             app.UseRouting();
-
 
             app.UseCors("nuevaPolitica");
 
-
+            app.UseAuthentication(); // ¡Este debe ir antes de Authorization!
             app.UseAuthorization();
 
-            app.MapRazorPages();
+            // Configuración Swagger
+           
             app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ejemplo"));
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
+            
+            
+
+
+            app.MapControllers();
+            app.MapRazorPages();
+
             app.Run();
         }
     }

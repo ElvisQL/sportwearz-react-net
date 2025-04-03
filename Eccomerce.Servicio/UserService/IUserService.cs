@@ -8,14 +8,16 @@ using Eccomerce.DTO;
 using Eccomerce.Repositorio;
 using Eccomerce.DTO.User;
 using Eccomerce.Servicio;
+using Eccomerce.DTO.Cart;
 
 namespace Eccomerce.Servicio.UserService
 {
     public interface IUserService: ICRUDService<UserCreateDTO>
     {
-        Task<List<UserSessionDTO>> ListarUsuarios(string rol, string busqueda);
+        Task<List<UserSessionDTO>> ListarUsuarios();
         Task<UserSessionDTO> Logear(UserLoginDTO modelo);
-        Task<bool> UpdateUserByAdmin(UserUpdateDTO modelo);
+        Task<bool> UpdateUserByAdmin(int userId,UserUpdateDTO modelo);
+        
         
     }
 }

@@ -81,14 +81,14 @@ namespace WebApplication1.Controllers
 
 
 
-        [HttpPut("Edit")]
-        public async Task<IActionResult> Edit([FromBody] BrandDTO modelo)
+        [HttpPut("Edit/{brandId:int}")]
+        public async Task<IActionResult> Edit([FromRoute] int brandId,[FromBody] BrandDTO modelo)
         {
             var response = new ResponseDTO<bool>();
             try
             {
                 response.Success = true;
-                response.Response = await _brandService.Update(modelo);
+                response.Response = await _brandService.Update(brandId,modelo);
             }
             catch (Exception e)
             {

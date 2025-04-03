@@ -113,33 +113,38 @@ namespace Eccomerce.Servicio.CategoryService
             }
         }
 
-        public async Task<bool> Update(CategoryDTO modelo)
+        public async Task<bool> Update(int categoryId, CategoryDTO modelo) // <- ID como parámetro
         {
             try
             {
+                // Buscar por ID desde el parámetro (no desde el DTO)
+                var categoria = await _categoryRepository
+                    .Consultar(c => c.CategoryId == categoryId)
+                    .FirstOrDefaultAsync();
 
-                var consultaLINQ = _categoryRepository.Consultar(p => p.CategoryId == modelo.CategoryId);
-                var response = await consultaLINQ.FirstOrDefaultAsync();
-                if (response != null)
+                if (categoria == null)
                 {
-                    response.Nombre = modelo.Nombre;
-                    response.Descripcion = modelo.Descripcion;
+                    throw new KeyNotFoundException($"Categoría con ID {categoryId} no encontrada");
+                }
 
-                    var responseCategory = await _categoryRepository.Editar(response);
-                    if (!responseCategory)
-                    {
-                        throw new TaskCanceledException("No se pudo editar la categoria");
-                    }
-                    return responseCategory;
-                }
-                else
+                // Actualizar propiedades desde el DTO
+                categoria.Nombre = modelo.Nombre;
+                categoria.Descripcion = modelo.Descripcion;
+
+                // Guardar cambios
+                var resultado = await _categoryRepository.Editar(categoria);
+
+                if (!resultado)
                 {
-                    throw new TaskCanceledException("No se encontro la categoria a editar");
+                    throw new InvalidOperationException("Error al guardar cambios");
                 }
+
+                return resultado;
             }
             catch (Exception ex)
             {
-                throw ex;
+                // Mejor práctica: No relanzar la excepción original
+                throw; // <- Mantiene el stack trace
             }
         }
     }

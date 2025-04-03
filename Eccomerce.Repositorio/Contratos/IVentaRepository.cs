@@ -10,5 +10,6 @@ namespace Eccomerce.Repositorio.Contratos
     public interface IVentaRepository: IGenericRepository<Venta>
     {
         Task<Venta> RegistrarVenta(Venta model);
+        Task<bool> ActualizarEstadoVenta(int idVenta,string nuevoEstado);
     }
 }

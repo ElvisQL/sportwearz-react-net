@@ -39,24 +39,40 @@ namespace WebApplication1.Controllers
 
         }
 
-        [HttpGet("Catalogo/{categoria:alpha}/{busqueda:alpha?}")]
-        public async Task<IActionResult> Catalogo(string categoria, string busqueda = "NA")
+        [HttpGet("catalogo")]
+        public async Task<IActionResult> CatalogoFiltrado(
+            [FromQuery] string marcaId = "0",       // Cambiar a string y valor por defecto "0"
+            [FromQuery] string categoriaId = "0",   // Cambiar a string y valor por defecto "0"
+            [FromQuery] decimal precioMin = 0,
+            [FromQuery] decimal precioMax = 0,
+            [FromQuery] string busqueda = "")
         {
             var response = new ResponseDTO<List<ProductoDTO>>();
-
             try
             {
-                if (busqueda == "NA") busqueda = "";
-                if (categoria.ToLower() == "todos") categoria = "";
+                // Convertir cadenas separadas por comas a listas de enteros, omitiendo "0"
+                var marcaIds = marcaId == "0"
+                    ? new List<int>()
+                    : marcaId.Split(',').Select(int.Parse).ToList();
+
+                var categoriaIds = categoriaId == "0"
+                    ? new List<int>()
+                    : categoriaId.Split(',').Select(int.Parse).ToList();
+
+                response.Response = await _productService.Catalogo(
+                    marcaIds: marcaIds,
+                    categoriaIds: categoriaIds,
+                    precioMin: precioMin,
+                    precioMax: precioMax,
+                    busqueda: busqueda
+                );
                 response.Success = true;
-                response.Response = await _productService.Catalogo(categoria, busqueda);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 response.Success = false;
-                response.Message = e.Message;
+                response.Message = ex.Message;
             }
-
             return Ok(response);
         }
 
@@ -101,14 +117,14 @@ namespace WebApplication1.Controllers
 
 
 
-        [HttpPut("Edit")]
-        public async Task<IActionResult> Edit([FromBody] ProductoDTO modelo)
+        [HttpPut("Edit/{productId:int}")]
+        public async Task<IActionResult> Edit([FromRoute] int productId,[FromBody] ProductoDTO modelo)
         {
             var response = new ResponseDTO<bool>();
             try
             {
                 response.Success = true;
-                response.Response = await _productService.Update(modelo);
+                response.Response = await _productService.Update(productId,modelo);
             }
             catch (Exception e)
             {

@@ -10,7 +10,7 @@ namespace Eccomerce.Servicio
     {
         Task<T> Create(T modelo);
         Task<T> Read(int id);
-        Task<bool> Update(T modelo);
+        Task<bool> Update(int id,T modelo);
         Task<bool> Delete(int id);
     }
 }

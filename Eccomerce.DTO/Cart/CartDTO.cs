@@ -9,9 +9,10 @@ namespace Eccomerce.DTO.Cart
 {
     public class CartDTO
     {
-        public ProductoDTO Producto { get; set; }
-        public int Cantidad {  get; set; }
-        public decimal? Precio { get; set; }
-        public decimal? Total { get; set; }
+        public int CartId { get; set; } // Añadir esta propiedad
+        
+        public List<CartItemDTO> CartItems { get; set; }
+
+        public decimal TotalPrice => CartItems.Sum(item => item.Total); // Total del carrito
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Eccomerce.MODELO;
 
@@ -12,7 +13,7 @@ public partial class CartItem
     public int ProductId { get; set; }
 
     public int Quantity { get; set; }
-
+    
     public DateTime? AddedAt { get; set; }
 
     public virtual Cart Cart { get; set; } = null!;

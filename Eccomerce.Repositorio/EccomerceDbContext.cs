@@ -7,9 +7,7 @@ namespace Eccomerce.Repositorio;
 
 public partial class EccomerceDbContext : DbContext
 {
-    public EccomerceDbContext()
-    {
-    }
+   
 
     public EccomerceDbContext(DbContextOptions<EccomerceDbContext> options)
         : base(options)
@@ -36,9 +34,7 @@ public partial class EccomerceDbContext : DbContext
 
     public virtual DbSet<Venta> Venta { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server= localhost; DataBase=Eccomerce_db; Trusted_Connection=True; TrustServerCertificate=True;");
+   
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,8 +59,13 @@ public partial class EccomerceDbContext : DbContext
 
             entity.HasOne(d => d.User).WithOne(p => p.Cart)
                 .HasForeignKey<Cart>(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_Carts_Users");
+            entity.HasMany(d => d.CartItems)
+                .WithOne(p => p.Cart)
+                .HasForeignKey(d => d.CartId)
+                .OnDelete(DeleteBehavior.Cascade); // Añadido Cascade para CartItems
+
         });
 
         modelBuilder.Entity<CartItem>(entity =>
@@ -78,12 +79,12 @@ public partial class EccomerceDbContext : DbContext
 
             entity.HasOne(d => d.Cart).WithMany(p => p.CartItems)
                 .HasForeignKey(d => d.CartId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_CartItems_Carts");
 
             entity.HasOne(d => d.Product).WithMany(p => p.CartItems)
                 .HasForeignKey(d => d.ProductId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_CartItems_Products");
         });
 
@@ -208,20 +209,34 @@ public partial class EccomerceDbContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Users_Roles");
+            entity.HasOne(u => u.Cart)
+                .WithOne(c => c.User)
+                .HasForeignKey<Cart>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Venta>(entity =>
         {
             entity.HasKey(e => e.IdVenta).HasName("PK__Venta__BC1240BD1B1AF3A7");
+            
 
             entity.Property(e => e.FechaCreacion)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.Total).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Estado)
+                    .HasMaxLength(20)
+                    .HasDefaultValue("Pendiente")
+                    .IsRequired();
 
             entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.Venta)
                 .HasForeignKey(d => d.IdUsuario)
                 .HasConstraintName("FK__Venta__IdUsuario__6FE99F9F");
+            // Configuración de la relación con DetalleVenta
+            entity.HasMany(v => v.DetalleVenta)
+                .WithOne(d => d.IdVentaNavigation)
+                .HasForeignKey(d => d.IdVenta)
+                .OnDelete(DeleteBehavior.Cascade); // Eliminación en cascada
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -24,24 +24,47 @@ namespace Eccomerce.Servicio.ProductService
             _productRepository = productRepository;
         }
 
-        public async Task<List<ProductoDTO>> Catalogo(string categoria, string busqueda)
+        public async Task<List<ProductoDTO>> Catalogo(
+            List<int> marcaIds,
+            List<int> categoriaIds,
+            decimal precioMin = 0,
+            decimal precioMax = 0,
+            string busqueda = "")
         {
             try
             {
-                var consultaLINQ = _productRepository.Consultar(p => p.ProductName.ToLower().Contains(busqueda.ToLower()) && p.Categories.Any(c => c.Nombre.ToLower().Contains(categoria.ToLower())));
-                consultaLINQ = consultaLINQ
+                var consulta = _productRepository.Consultar();
+
+                // Filtros dinámicos
+                if (!string.IsNullOrEmpty(busqueda))
+                    consulta = consulta.Where(p => p.ProductName.Contains(busqueda));
+
+                if (marcaIds.Any())
+                    consulta = consulta.Where(p => marcaIds.Contains(p.Brand.BrandId)); // Filtrar por ID
+
+                if (categoriaIds.Any())
+                    consulta = consulta.Where(p => p.Categories.Any(c => categoriaIds.Contains(c.CategoryId)));
+
+                if (precioMin > 0)
+                    consulta = consulta.Where(p => p.Price >= precioMin);
+
+                if (precioMax > 0)
+                    consulta = consulta.Where(p => p.Price <= precioMax);
+
+                consulta = consulta
                     .Include(c => c.Categories)
-                    .Include(p => p.Brand);
+                    .Include(p => p.Brand)
+                    ;
 
 
+                // Ejecutar la consulta
+                var productos = await consulta.ToListAsync();
 
-                List<ProductoDTO> lista = _mapper.Map<List<ProductoDTO>>(await consultaLINQ.ToListAsync());
-                return lista;
+                return _mapper.Map<List<ProductoDTO>>(productos);
             }
             catch (Exception ex)
             {
-
-                throw ex;
+                throw new ApplicationException("Error en catálogo avanzado", ex);
             }
         }
 
@@ -165,36 +188,44 @@ namespace Eccomerce.Servicio.ProductService
             }
         }
 
-        public async Task<bool> Update(ProductoDTO modelo)
+        public async Task<bool> Update(int productId,ProductoDTO modelo)
         {
             try
             {
 
-                var consultaLINQ = _productRepository.Consultar(p => p.ProductId == modelo.ProductId);
-                var response = await consultaLINQ.FirstOrDefaultAsync();
-                if (response != null)
+                var product = await _productRepository.Consultar(c => c.ProductId == productId)
+                    .Include(p => p.Categories)
+                    .FirstOrDefaultAsync();
+               if (product == null)
                 {
-                    response.ProductName = modelo.ProductName;
-                    response.Description = modelo.Description;
-                    response.Price = modelo.Price;
-                    response.Stock = (int)modelo.Stock;
-                    response.ImageUrl = modelo.ImageURL;
-
-                    var responseProduct = await _productRepository.Editar(response);
-                    if (!responseProduct)
-                    {
-                        throw new TaskCanceledException("No se pudo editar el producto");
-                    }
-                    return responseProduct;
+                    throw new TaskCanceledException("No se encontro el producto a actualizar");
+                }
+                product.ProductName = modelo.ProductName;
+                product.Description = modelo.Description;
+                product.Price = modelo.Price;
+                product.Stock = modelo.Stock;
+                product.ImageUrl = modelo.ImageURL;
+                product.UpdatedAt = DateTime.UtcNow;
+                product.BrandId = modelo.BrandId;
+                var categories = await _productRepository.GetCategoriesByIdsAsync(modelo.CategoriesIds);
+                if (!categories.Any())
+                {
+                    throw new ArgumentException("No valid categories found.");
+                }
+                product.Categories = categories;
+                var response = await _productRepository.Editar(product);
+                if (response)
+                {
+                    return response;
                 }
                 else
                 {
-                    throw new TaskCanceledException("No se encontro el producto a editar");
+                    throw new TaskCanceledException("No se pudo actualizar el producto");
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw ;
             }
         }
     }

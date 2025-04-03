@@ -12,7 +12,7 @@ namespace Eccomerce.Servicio.ProductService
     public interface IProductService: ICRUDService<ProductoDTO>
     {
         Task<List<ProductoDTO>> Listar(string busqueda);
-        Task<List<ProductoDTO>> Catalogo(string categoria, string busqueda);
+        Task<List<ProductoDTO>> Catalogo(List<int> marcaIds, List<int> categoriaIds,decimal precioMin,decimal precioMax,string busqueda);
 
     }
 }
