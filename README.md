@@ -65,6 +65,13 @@ SportWearz.API/
   - Códigos de estado HTTP simplificados (siempre 200 OK + detalle en ResponseDto).
 
 ---
+## 🚧 Mejoras Pendientes
+- Normalizar base de datos (eliminar redundancias)
 
+- Implementar patron CQRS para queries complejas
+
+- Añadir logging centralizado (Serilog)
+
+- Mejorar manejo de errores (excepciones custom)
 ## 📘 Documentacion
 Para ver la documentacion ir a https://sportwearzapp.azurewebsites.net/swagger/index.html
