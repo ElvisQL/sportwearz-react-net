@@ -1,4 +1,4 @@
-# SportWearz Backend API 🛠️⚡
+# SportWearz Backend API 
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoftazure)](https://azure.microsoft.com/)
@@ -6,11 +6,11 @@
 
 Backend para e-commerce deportivo desarrollado en **.NET 8**, con arquitectura pragmática enfocada en rapidez de desarrollo. Conectado a frontend React (https://github.com/ElvisQL/sportwearz-react-net).
 
-> **⚠️ Nota importante**: API diseñada con fines prácticos/educativos. No sigue estrictamente principios REST estándar.
+> ** Nota importante**: API diseñada con fines prácticos/educativos. No sigue estrictamente principios REST estándar.
 
 ---
 
-## 🏗️ Estructura del Proyecto
+##  Estructura del Proyecto
 
 ```bash
 SportWearz.API/
@@ -23,7 +23,7 @@ SportWearz.API/
 ├── Servicio/       # Capa de negocio (validaciones, reglas)
 └── Utilidades/     # Helpers (manejo de JWT, extensiones)
 ```
-## 🧠 Arquitectura Key Points
+##  Arquitectura Key Points
 
 ### Enfoque Data First (Inicial)
 - Se generaron modelos automáticamente desde la DB existente usando Entity Framework.
@@ -65,7 +65,7 @@ SportWearz.API/
   - Códigos de estado HTTP simplificados (siempre 200 OK + detalle en ResponseDto).
 
 ---
-## 🚧 Mejoras Pendientes
+##  Mejoras Pendientes
 - Normalizar base de datos (eliminar redundancias)
 
 - Implementar patron CQRS para queries complejas
@@ -73,5 +73,5 @@ SportWearz.API/
 - Añadir logging centralizado (Serilog)
 
 - Mejorar manejo de errores (excepciones custom)
-## 📘 Documentacion
+##  Documentacion
 Para ver la documentacion ir a https://sportwearzapp.azurewebsites.net/swagger/index.html
